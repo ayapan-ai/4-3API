@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>簡易テトリス</title>
+<style>
+  body { display:flex; flex-direction:column; align-items:center; background:#222; color:#fff; font-family:sans-serif; }
+  canvas { background:#000; border:2px solid #fff; margin-top:10px; }
+  #score { margin-top:10px; font-size:20px; }
+</style>
+</head>
+<body>
+<h1>簡易テトリス</h1>
+<div id="score">SCORE: 0</div>
+<canvas id="board" width="240" height="400"></canvas>
+<p>← → 移動 / ↑ 回転 / ↓ 落下</p>
+
+<script>
+const cols = 12, rows = 20, size = 20;
+const canvas = document.getElementById("board");
+const ctx = canvas.getContext("2d");
+let score = 0;
+
+const shapes = {
+  I: [[1,1,1,1]],
+  O: [[1,1],[1,1]],
+  T: [[0,1,0],[1,1,1]],
+  S: [[0,1,1],[1,1,0]],
+  Z: [[1,1,0],[0,1,1]],
+  J: [[1,0,0],[1,1,1]],
+  L: [[0,0,1],[1,1,1]],
+};
+const colors = { I:"cyan", O:"yellow", T:"purple", S:"green", Z:"red", J:"blue", L:"orange" };
+
+let board = Array.from({length: rows}, () => Array(cols).fill(0));
+
+function randomPiece() {
+  const keys = Object.keys(shapes);
+  const key = keys[Math.floor(Math.random() * keys.length)];
+  return { shape: shapes[key], color: colors[key], x: Math.floor(cols/2) - 1, y: 0 };
+}
+
+let current = randomPiece();
+
+function collide(shape, x, y) {
+  for (let r = 0; r < shape.length; r++) {
+    for (let c = 0; c < shape[r].length; c++) {
+      if (shape[r][c]) {
+        const nx = x + c, ny = y + r;
+        if (nx < 0 || nx >= cols || ny >= rows) return true;
+        if (ny >= 0 && board[ny][nx]) return true;
+      }
+    }
+  }
+  return false;
+}
+
+function merge() {
+  current.shape.forEach((row, r) => {
+    row.forEach((v, c) => {
+      if (v) board[current.y + r][current.x + c] = current.color;
+    });
+  });
+}
+
+function clearLines() {
+  for (let r = rows - 1; r >= 0; r--) {
+    if (board[r].every(cell => cell)) {
+      board.splice(r, 1);
+      board.unshift(Array(cols).fill(0));
+      score += 100;
+      document.getElementById("score").textContent = "SCORE: " + score;
+      r++;
+    }
+  }
+}
+
+function rotate(shape) {
+  const rows = shape.length, cols = shape[0].length;
+  const result = Array.from({length: cols}, () => Array(rows).fill(0));
+  for (let r = 0; r < rows; r++)
+    for (let c = 0; c < cols; c++)
+      result[c][rows - 1 - r] = shape[r][c];
+  return result;
+}
+
+function drop() {
+  if (!collide(current.shape, current.x, current.y + 1)) {
+    current.y++;
+  } else {
+    merge();
+    clearLines();
+    current = randomPiece();
+    if (collide(current.shape, current.x, current.y)) {
+      alert("GAME OVER  SCORE: " + score);
+      board = Array.from({length: rows}, () => Array(cols).fill(0));
+      score = 0;
+      document.getElementById("score").textContent = "SCORE: 0";
+    }
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (board[r][c]) {
+        ctx.fillStyle = board[r][c];
+        ctx.fillRect(c * size, r * size, size - 1, size - 1);
+      }
+    }
+  }
+  ctx.fillStyle = current.color;
+  current.shape.forEach((row, r) => {
+    row.forEach((v, c) => {
+      if (v) ctx.fillRect((current.x + c) * size, (current.y + r) * size, size - 1, size - 1);
+    });
+  });
+}
+
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowLeft" && !collide(current.shape, current.x - 1, current.y)) current.x--;
+  if (e.key === "ArrowRight" && !collide(current.shape, current.x + 1, current.y)) current.x++;
+  if (e.key === "ArrowDown") drop();
+  if (e.key === "ArrowUp") {
+    const rotated = rotate(current.shape);
+    if (!collide(rotated, current.x, current.y)) current.shape = rotated;
+  }
+});
+
+setInterval(() => { drop(); draw(); }, 500);
+draw();
+</script>
+</body>
+</html>

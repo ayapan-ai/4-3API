@@ -1,0 +1,17 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# 環境変数・シークレット
+.env
+service_account*.json
+client_secret*.json
+token*.json
+
+# OS / エディタ
+.DS_Store
+.cursor/
+.vscode/
+.idea/
